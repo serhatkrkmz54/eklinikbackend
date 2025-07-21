@@ -8,6 +8,7 @@ import com.eklinik.eklinikapi.repository.ClinicRepository;
 import com.eklinik.eklinikapi.service.ClinicService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class ClinicServiceImpl implements ClinicService {
 
     private final ClinicRepository clinicRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public ClinicResponse createClinic(ClinicRequest request) {
@@ -29,7 +31,9 @@ public class ClinicServiceImpl implements ClinicService {
                 .name(request.getName().trim())
                 .build();
         Clinic savedClinic = clinicRepository.save(clinic);
-        return mapToClinicResponse(savedClinic);
+        ClinicResponse response = mapToClinicResponse(savedClinic);
+        messagingTemplate.convertAndSend("/topic/clinics", response);
+        return response;
     }
 
     @Override
