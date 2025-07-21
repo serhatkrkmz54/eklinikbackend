@@ -3,7 +3,7 @@ package com.eklinik.eklinikapi.service;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
-import com.eklinik.eklinikapi.dto.request.admin.UserResponse;
+import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 
 import java.util.List;

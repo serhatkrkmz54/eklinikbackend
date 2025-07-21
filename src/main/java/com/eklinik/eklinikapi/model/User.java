@@ -91,10 +91,21 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "patient",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Appointment> appointmentsAsPatient;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private PatientProfile patientProfile;
 
     @Column(name = "deleted", nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
+
+    public void setPatientProfile(PatientProfile patientProfile) {
+        if (patientProfile == null) {
+            if (this.patientProfile != null) {
+                this.patientProfile.setUser(null);
+            }
+        } else {
+            patientProfile.setUser(this);
+        }
+        this.patientProfile = patientProfile;
+    }
 
 }

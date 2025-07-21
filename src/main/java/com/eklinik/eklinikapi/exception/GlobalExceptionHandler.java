@@ -2,9 +2,11 @@ package com.eklinik.eklinikapi.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
@@ -22,5 +24,27 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("message", "T.C. Kimlik No veya şifre hatalı.");
+        return new ResponseEntity<>(responseBody, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(RegistrationException.class)
+    public ResponseEntity<Map<String, String>> handleRegistrationException(RegistrationException ex) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("message", ex.getMessage());
+        return new ResponseEntity<>(responseBody, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("message", ex.getMessage());
+        return new ResponseEntity<>(responseBody, HttpStatus.CONFLICT);
     }
 }

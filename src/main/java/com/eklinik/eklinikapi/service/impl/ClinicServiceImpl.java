@@ -2,6 +2,7 @@ package com.eklinik.eklinikapi.service.impl;
 
 import com.eklinik.eklinikapi.dto.request.clinics.ClinicRequest;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
+import com.eklinik.eklinikapi.exception.ResourceAlreadyExistsException;
 import com.eklinik.eklinikapi.model.Clinic;
 import com.eklinik.eklinikapi.repository.ClinicRepository;
 import com.eklinik.eklinikapi.service.ClinicService;
@@ -21,8 +22,11 @@ public class ClinicServiceImpl implements ClinicService {
 
     @Override
     public ClinicResponse createClinic(ClinicRequest request) {
+        if (clinicRepository.existsByNameIgnoreCase(request.getName().trim())) {
+            throw new ResourceAlreadyExistsException("Bu isme sahip bir klinik zaten mevcut!");
+        }
         Clinic clinic = Clinic.builder()
-                .name(request.getName())
+                .name(request.getName().trim())
                 .build();
         Clinic savedClinic = clinicRepository.save(clinic);
         return mapToClinicResponse(savedClinic);

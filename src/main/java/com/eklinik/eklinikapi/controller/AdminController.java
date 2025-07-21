@@ -5,7 +5,7 @@ import com.eklinik.eklinikapi.dto.request.schedule.ScheduleGenerationRequest;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
-import com.eklinik.eklinikapi.dto.request.admin.UserResponse;
+import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.clinics.ClinicRequest;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;

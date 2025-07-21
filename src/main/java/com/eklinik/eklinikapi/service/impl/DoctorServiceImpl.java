@@ -1,6 +1,6 @@
 package com.eklinik.eklinikapi.service.impl;
 
-import com.eklinik.eklinikapi.dto.request.admin.UserResponse;
+import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;

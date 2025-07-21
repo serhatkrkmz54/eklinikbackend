@@ -1,4 +1,4 @@
-package com.eklinik.eklinikapi.dto.request.admin;
+package com.eklinik.eklinikapi.dto.response.user;
 
 import com.eklinik.eklinikapi.enums.UserRole;
 import lombok.Builder;
@@ -17,4 +17,5 @@ public class UserResponse {
     private String phoneNumber;
     private UserRole role;
     private LocalDateTime createdAt;
+    private PatientProfileResponse patientProfile;
 }

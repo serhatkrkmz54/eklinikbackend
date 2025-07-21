@@ -1,6 +1,6 @@
 package com.eklinik.eklinikapi.dto.response.doctor;
 
-import com.eklinik.eklinikapi.dto.request.admin.UserResponse;
+import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import lombok.Builder;
 import lombok.Data;

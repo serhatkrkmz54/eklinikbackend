@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Boolean existsByRole(UserRole role);
 
+    Boolean existsByPhoneNumber(String phoneNumber);
+
 }

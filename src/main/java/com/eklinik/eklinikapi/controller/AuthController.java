@@ -1,6 +1,6 @@
 package com.eklinik.eklinikapi.controller;
 
-import com.eklinik.eklinikapi.dto.request.admin.UserResponse;
+import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.user.LoginRequest;
 import com.eklinik.eklinikapi.dto.request.user.RegisterPatientCombinatedRequest;
 import com.eklinik.eklinikapi.dto.request.user.UpdateMyUserRequest;
@@ -28,9 +28,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> loginUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<LoginResponse> loginUser(@RequestBody @Valid LoginRequest loginRequest) {
         LoginResponse loginResponse = authService.loginUser(loginRequest);
         return ResponseEntity.ok(loginResponse);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserResponse> getMyProfile(@AuthenticationPrincipal UserDetails currentUser) {
+        UserResponse userProfile = authService.getMyProfile(currentUser);
+        return ResponseEntity.ok(userProfile);
     }
 
     @PutMapping("/update-profile")
