@@ -19,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/patient")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_PATIENT')")
 public class PatientController {
 
     private final PatientService patientService;

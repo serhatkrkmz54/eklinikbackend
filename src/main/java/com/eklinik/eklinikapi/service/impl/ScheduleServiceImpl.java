@@ -34,28 +34,42 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(() -> new RuntimeException("Doktor bulunamadı!"));
 
         List<Schedule> schedulesToCreate = new ArrayList<>();
-        LocalDateTime currentSlotStart = request.getWorkdayStart();
+        LocalDate currentDate = request.getStartDate();
 
-        while (currentSlotStart.isBefore(request.getWorkdayEnd())) {
-            LocalDateTime currentSlotEnd = currentSlotStart.plusMinutes(request.getSlotDurationInMinutes());
+        while (!currentDate.isAfter(request.getEndDate())) {
+            if (request.getWorkDays().contains(currentDate.getDayOfWeek())) {
 
-            if (currentSlotEnd.isAfter(request.getWorkdayEnd())) {
-                break;
+                LocalDateTime workdayStart = currentDate.atTime(request.getWorkStartTime());
+                LocalDateTime workdayEnd = currentDate.atTime(request.getWorkEndTime());
+
+                LocalDateTime lunchStart = (request.getLunchStartTime() != null) ? currentDate.atTime(request.getLunchStartTime()) : null;
+                LocalDateTime lunchEnd = (request.getLunchEndTime() != null) ? currentDate.atTime(request.getLunchEndTime()) : null;
+
+                LocalDateTime currentSlotStart = workdayStart;
+
+                while (currentSlotStart.isBefore(workdayEnd)) {
+                    LocalDateTime currentSlotEnd = currentSlotStart.plusMinutes(request.getSlotDurationInMinutes());
+
+                    if (currentSlotEnd.isAfter(workdayEnd)) {
+                        break;
+                    }
+
+                    boolean isDuringLunch = lunchStart != null && lunchEnd != null &&
+                            currentSlotStart.isBefore(lunchEnd) &&
+                            currentSlotEnd.isAfter(lunchStart);
+
+                    if (!isDuringLunch) {
+                        schedulesToCreate.add(Schedule.builder()
+                                .doctor(doctor)
+                                .startTime(currentSlotStart)
+                                .endTime(currentSlotEnd)
+                                .status(ScheduleStatus.AVAILABLE)
+                                .build());
+                    }
+                    currentSlotStart = currentSlotEnd;
+                }
             }
-
-            boolean isDuringLunch = request.getLunchStart() != null && request.getLunchEnd() != null &&
-                    currentSlotStart.isBefore(request.getLunchEnd()) &&
-                    currentSlotEnd.isAfter(request.getLunchStart());
-
-            if (!isDuringLunch) {
-                schedulesToCreate.add(Schedule.builder()
-                        .doctor(doctor)
-                        .startTime(currentSlotStart)
-                        .endTime(currentSlotEnd)
-                        .status(ScheduleStatus.AVAILABLE)
-                        .build());
-            }
-            currentSlotStart = currentSlotEnd;
+            currentDate = currentDate.plusDays(1);
         }
 
         if (!schedulesToCreate.isEmpty()) {

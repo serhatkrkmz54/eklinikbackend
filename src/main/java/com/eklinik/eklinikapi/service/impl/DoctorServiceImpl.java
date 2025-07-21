@@ -1,5 +1,6 @@
 package com.eklinik.eklinikapi.service.impl;
 
+import com.eklinik.eklinikapi.dto.request.doctor.UpdateDoctorRequest;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
@@ -8,6 +9,7 @@ import com.eklinik.eklinikapi.dto.response.doctor.*;
 import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import com.eklinik.eklinikapi.enums.UserRole;
+import com.eklinik.eklinikapi.exception.ResourceAlreadyExistsException;
 import com.eklinik.eklinikapi.model.*;
 import com.eklinik.eklinikapi.repository.*;
 import com.eklinik.eklinikapi.service.DoctorService;
@@ -37,6 +39,9 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     @Transactional
     public DoctorResponse createDoctor(DoctorRequest request) {
+        if (doctorRepository.existsByUserId(request.getUserId())) {
+            throw new ResourceAlreadyExistsException("Bu kullanıcı zaten bir doktor olarak atanmış!");
+        }
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı, ID: " + request.getUserId()));
 
@@ -44,7 +49,6 @@ public class DoctorServiceImpl implements DoctorService {
                 .orElseThrow(() -> new RuntimeException("Klinik bulunamadı, ID: " + request.getClinicId()));
 
         user.setRole(UserRole.ROLE_DOCTOR);
-        userRepository.save(user);
 
         Doctor doctor = Doctor.builder()
                 .user(user)
@@ -71,18 +75,19 @@ public class DoctorServiceImpl implements DoctorService {
 
     @Override
     @Transactional
-    public DoctorResponse updateDoctor(Long id, DoctorRequest request) {
-        Doctor doctorToUpdate = findDoctorEntityById(id);
-        User newUser = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı, ID: " + request.getUserId()));
-        Clinic newClinic = clinicRepository.findById(request.getClinicId())
-                .orElseThrow(() -> new RuntimeException("Klinik bulunamadı, ID: " + request.getClinicId()));
-        newUser.setRole(UserRole.ROLE_DOCTOR);
-        userRepository.save(newUser);
+    public DoctorResponse updateDoctor(Long id, UpdateDoctorRequest request) {
+        Doctor doctorToUpdate = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doktor bulunamadı, ID: " + id));
 
-        doctorToUpdate.setUser(newUser);
-        doctorToUpdate.setClinic(newClinic);
-        doctorToUpdate.setTitle(request.getTitle());
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            doctorToUpdate.setTitle(request.getTitle());
+        }
+
+        if (request.getClinicId() != null) {
+            Clinic newClinic = clinicRepository.findById(request.getClinicId())
+                    .orElseThrow(() -> new RuntimeException("Klinik bulunamadı, ID: " + request.getClinicId()));
+            doctorToUpdate.setClinic(newClinic);
+        }
 
         Doctor updatedDoctor = doctorRepository.save(doctorToUpdate);
         return mapToDoctorResponse(updatedDoctor);

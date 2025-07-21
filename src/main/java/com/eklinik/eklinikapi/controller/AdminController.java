@@ -1,6 +1,7 @@
 package com.eklinik.eklinikapi.controller;
 
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
+import com.eklinik.eklinikapi.dto.request.doctor.UpdateDoctorRequest;
 import com.eklinik.eklinikapi.dto.request.schedule.ScheduleGenerationRequest;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
@@ -122,8 +123,11 @@ public class AdminController {
     }
 
     @PutMapping("/update-doctors/doctors/{id}")
-    public ResponseEntity<DoctorResponse> updateDoctor(@PathVariable Long id, @Valid @RequestBody DoctorRequest request) {
-        return ResponseEntity.ok(doctorService.updateDoctor(id, request));
+    public ResponseEntity<DoctorResponse> updateDoctor(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateDoctorRequest request) {
+        DoctorResponse updatedDoctor = doctorService.updateDoctor(id, request);
+        return ResponseEntity.ok(updatedDoctor);
     }
 
     @DeleteMapping("/delete/doctors/{id}")
@@ -141,7 +145,7 @@ public class AdminController {
     @GetMapping("/doctors/{doctorId}/schedules")
     public ResponseEntity<List<ScheduleResponse>> getSchedulesForDoctor(
             @PathVariable Long doctorId,
-            @RequestParam("date") LocalDate date) {
+            @RequestParam(value = "date", required = false) LocalDate date) {
         List<ScheduleResponse> schedules = scheduleService.getSchedulesForDoctorByDate(doctorId, date);
         return ResponseEntity.ok(schedules);
     }

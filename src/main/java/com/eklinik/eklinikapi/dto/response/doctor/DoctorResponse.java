@@ -2,6 +2,7 @@ package com.eklinik.eklinikapi.dto.response.doctor;
 
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
+import com.eklinik.eklinikapi.model.PatientProfile;
 import lombok.Builder;
 import lombok.Data;
 
