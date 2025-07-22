@@ -10,11 +10,13 @@ import com.eklinik.eklinikapi.dto.response.prescription.PrescriptionForPatientRe
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import com.eklinik.eklinikapi.enums.ScheduleStatus;
+import com.eklinik.eklinikapi.exception.AppointmentRuleException;
 import com.eklinik.eklinikapi.model.*;
 import com.eklinik.eklinikapi.repository.*;
 import com.eklinik.eklinikapi.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,7 @@ public class PatientServiceImpl implements PatientService {
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
     private final MedicalRecordRepository medicalRecordRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public List<ClinicResponse> getAllClinics() {
@@ -45,20 +48,18 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public List<DoctorResponse> getDoctorsByClinic(Integer clinicId) {
-        // Bu metot DoctorServiceImpl'deki mapToDoctorResponse'un bir kopyasıdır.
-        // Daha büyük projelerde bu tür map'leme işlemleri için merkezi bir Mapper sınıfı oluşturulur.
         return doctorRepository.findByClinicId(clinicId).stream()
                 .map(this::mapToDoctorResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ScheduleResponse> getAvailableSlots(Long doctorId, LocalDate date) {
+    public List<ScheduleResponse> getSlotsByDoctorAndDate(Long doctorId, LocalDate date) {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59, 59);
 
         return scheduleRepository
-                .findByDoctorIdAndStartTimeBetweenAndStatusOrderByStartTimeAsc(doctorId, startOfDay, endOfDay, ScheduleStatus.AVAILABLE)
+                .findByDoctorIdAndStartTimeBetweenOrderByStartTimeAsc(doctorId, startOfDay, endOfDay)
                 .stream()
                 .map(schedule -> ScheduleResponse.builder()
                         .id(schedule.getId())
@@ -76,17 +77,34 @@ public class PatientServiceImpl implements PatientService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
 
         Schedule scheduleToBook = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Randevu zaman dilimi bulunamadı."));
+                .orElseThrow(() -> new AppointmentRuleException("Randevu zaman dilimi bulunamadı."));
 
-        if (scheduleToBook.getStatus() == ScheduleStatus.BOOKED) {
-            throw new RuntimeException("Bu zaman dilimi zaten dolu.");
+        if (scheduleToBook.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new AppointmentRuleException("Geçmiş tarihli bir saate randevu alamazsınız.");
         }
 
-        // 1. Zaman diliminin durumunu GÜNCELLE
-        scheduleToBook.setStatus(ScheduleStatus.BOOKED);
-        scheduleRepository.save(scheduleToBook);
+        if (scheduleToBook.getStatus() == ScheduleStatus.BOOKED) {
+            throw new AppointmentRuleException("Bu zaman dilimi zaten dolu.");
+        }
 
-        // 2. Yeni bir Randevu (Appointment) OLUŞTUR
+        Doctor doctor = scheduleToBook.getDoctor();
+        LocalDateTime fifteenDaysAgo = LocalDateTime.now().minusDays(15);
+
+        boolean hasRecentAppointment = appointmentRepository
+                .existsByPatientIdAndDoctorIdAndStatusNotAndAppointmentTimeAfter(
+                        patient.getId(),
+                        doctor.getId(),
+                        AppointmentStatus.CANCELLED,
+                        fifteenDaysAgo
+                );
+
+        if (hasRecentAppointment) {
+            throw new AppointmentRuleException("Aynı doktordan 15 gün içinde sadece bir randevu alabilirsiniz.");
+        }
+
+        scheduleToBook.setStatus(ScheduleStatus.BOOKED);
+        Schedule updatedSchedule = scheduleRepository.save(scheduleToBook);
+
         Appointment newAppointment = Appointment.builder()
                 .patient(patient)
                 .doctor(scheduleToBook.getDoctor())
@@ -96,6 +114,12 @@ public class PatientServiceImpl implements PatientService {
                 .build();
 
         Appointment savedAppointment = appointmentRepository.save(newAppointment);
+        String topic = String.format("/topic/slots/%d/%s",
+                doctor.getId(),
+                updatedSchedule.getStartTime().toLocalDate().toString()
+        );
+        messagingTemplate.convertAndSend(topic, new ScheduleResponse(updatedSchedule));
+
 
         return mapToAppointmentResponse(savedAppointment);
     }
@@ -118,17 +142,15 @@ public class PatientServiceImpl implements PatientService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
 
         Appointment appointmentToCancel = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Randevu bulunamadı."));
+                .orElseThrow(() -> new AppointmentRuleException("Randevu bulunamadı."));
 
         if (!appointmentToCancel.getPatient().getId().equals(patient.getId())) {
-            throw new RuntimeException("Bu randevuyu iptal etme yetkiniz yok.");
+            throw new AppointmentRuleException("Bu randevuyu iptal etme yetkiniz yok.");
         }
 
-        // 1. Randevunun durumunu GÜNCELLE
         appointmentToCancel.setStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointmentToCancel);
 
-        // 2. İlişkili zaman dilimini tekrar MÜSAİT yap
         Schedule scheduleToFree = appointmentToCancel.getSchedule();
         scheduleToFree.setStatus(ScheduleStatus.AVAILABLE);
         scheduleRepository.save(scheduleToFree);
@@ -141,10 +163,10 @@ public class PatientServiceImpl implements PatientService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Randevu bulunamadı."));
+                .orElseThrow(() -> new AppointmentRuleException("Randevu bulunamadı."));
 
         if (!appointment.getPatient().getId().equals(patient.getId())) {
-            throw new RuntimeException("Bu randevu detayını görme yetkiniz yok.");
+            throw new AppointmentRuleException("Bu randevu detayını görme yetkiniz yok.");
         }
 
         Doctor doctor = appointment.getDoctor();

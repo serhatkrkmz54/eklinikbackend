@@ -20,4 +20,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             LocalDateTime endOfDay,
             ScheduleStatus status
     );
+
+
 }

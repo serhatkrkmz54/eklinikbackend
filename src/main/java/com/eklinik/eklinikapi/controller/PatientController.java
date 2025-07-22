@@ -5,6 +5,7 @@ import com.eklinik.eklinikapi.dto.response.appointment.AppointmentResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
+import com.eklinik.eklinikapi.service.DoctorService;
 import com.eklinik.eklinikapi.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.util.List;
 public class PatientController {
 
     private final PatientService patientService;
+    private final DoctorService doctorService;
 
     @GetMapping("/clinics")
     public ResponseEntity<List<ClinicResponse>> getAllClinics() {
@@ -37,7 +39,7 @@ public class PatientController {
     public ResponseEntity<List<ScheduleResponse>> getAvailableSlots(
             @PathVariable Long doctorId,
             @RequestParam("date") LocalDate date) {
-        return ResponseEntity.ok(patientService.getAvailableSlots(doctorId, date));
+        return ResponseEntity.ok(patientService.getSlotsByDoctorAndDate(doctorId, date));
     }
 
     @PostMapping("/appointments/{scheduleId}")
@@ -67,5 +69,10 @@ public class PatientController {
 
         AppointmentDetailForPatientResponse response = patientService.getMyAppointmentDetails(currentUser, appointmentId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/doctors/{doctorId}")
+    public ResponseEntity<DoctorResponse> getDoctorProfileById(@PathVariable Long doctorId) {
+        return ResponseEntity.ok(doctorService.getDoctorById(doctorId));
     }
 }

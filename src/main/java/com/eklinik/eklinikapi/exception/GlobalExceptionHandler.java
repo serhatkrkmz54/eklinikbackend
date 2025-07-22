@@ -47,4 +47,12 @@ public class GlobalExceptionHandler {
         responseBody.put("message", ex.getMessage());
         return new ResponseEntity<>(responseBody, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(AppointmentRuleException.class)
+    public ResponseEntity<Map<String, String>> handleAppointmentRuleException(AppointmentRuleException ex) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("message", ex.getMessage());
+        return new ResponseEntity<>(responseBody, HttpStatus.CONFLICT);
+    }
+
 }

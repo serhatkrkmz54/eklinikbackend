@@ -13,11 +13,9 @@ import java.util.List;
 public interface PatientService {
     List<ClinicResponse> getAllClinics();
     List<DoctorResponse> getDoctorsByClinic(Integer clinicId);
-    List<ScheduleResponse> getAvailableSlots(Long doctorId, LocalDate date);
-
+    List<ScheduleResponse> getSlotsByDoctorAndDate(Long doctorId, LocalDate date);
     AppointmentResponse bookAppointment(UserDetails currentUser, Long scheduleId);
     List<AppointmentResponse> getMyHistory(UserDetails currentUser);
     void cancelAppointment(UserDetails currentUser, Long appointmentId);
     AppointmentDetailForPatientResponse getMyAppointmentDetails(UserDetails currentUser, Long appointmentId);
-
 }
