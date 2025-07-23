@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface PatientService {
     List<ClinicResponse> getAllClinics();
@@ -18,4 +19,6 @@ public interface PatientService {
     List<AppointmentResponse> getMyHistory(UserDetails currentUser);
     void cancelAppointment(UserDetails currentUser, Long appointmentId);
     AppointmentDetailForPatientResponse getMyAppointmentDetails(UserDetails currentUser, Long appointmentId);
+    Map<LocalDate, List<ScheduleResponse>> getSlotsForDateRange(Long doctorId, LocalDate startDate, LocalDate endDate);
+
 }

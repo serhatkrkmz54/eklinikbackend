@@ -24,7 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -43,14 +47,14 @@ public class PatientServiceImpl implements PatientService {
     public List<ClinicResponse> getAllClinics() {
         return clinicRepository.findAll().stream()
                 .map(clinic -> ClinicResponse.builder().id(clinic.getId()).name(clinic.getName()).build())
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
     public List<DoctorResponse> getDoctorsByClinic(Integer clinicId) {
         return doctorRepository.findByClinicId(clinicId).stream()
                 .map(this::mapToDoctorResponse)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
@@ -67,7 +71,28 @@ public class PatientServiceImpl implements PatientService {
                         .endTime(schedule.getEndTime())
                         .status(schedule.getStatus())
                         .build())
-                .collect(Collectors.toList());
+                .collect(toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<LocalDate, List<ScheduleResponse>> getSlotsForDateRange(Long doctorId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+
+        List<Schedule> schedules = scheduleRepository
+                .findSchedulesWithDetailsByDoctorAndDateRange(
+                        doctorId,
+                        startDateTime,
+                        endDateTime
+                );
+
+        return schedules.stream()
+                .map(this::mapToScheduleResponse)
+                .collect(groupingBy(
+                        schedule -> schedule.getStartTime().toLocalDate(),
+                        toList()
+                ));
     }
 
     @Override
@@ -132,7 +157,7 @@ public class PatientServiceImpl implements PatientService {
         return appointmentRepository.findByPatientIdOrderByAppointmentTimeDesc(patient.getId())
                 .stream()
                 .map(this::mapToAppointmentResponse)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     @Override
@@ -230,12 +255,21 @@ public class PatientServiceImpl implements PatientService {
                         .dosage(p.getDosage())
                         .duration(p.getDuration())
                         .build())
-                .collect(Collectors.toList());
+                .collect(toList());
 
         return MedicalRecordForPatientResponse.builder()
                 .diagnosis(record.getDiagnosis())
                 .notes(record.getNotes())
                 .prescriptions(prescriptions)
                 .build();
+    }
+
+    private ScheduleResponse mapToScheduleResponse(Schedule schedule) {
+        return new ScheduleResponse(
+                schedule.getId(),
+                schedule.getStartTime(),
+                schedule.getEndTime(),
+                schedule.getStatus()
+        );
     }
 }
