@@ -2,19 +2,19 @@ package com.eklinik.eklinikapi.model;
 
 import com.eklinik.eklinikapi.enums.ScheduleStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Builder
+@Getter
+@Setter
 @Table(name = "schedules")
+@EqualsAndHashCode(exclude = {"appointment"})
+@ToString(exclude = {"appointment"})
 public class Schedule {
 
     @Id

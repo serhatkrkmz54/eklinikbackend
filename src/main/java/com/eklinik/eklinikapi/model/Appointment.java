@@ -2,20 +2,20 @@ package com.eklinik.eklinikapi.model;
 
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Builder
+@Getter
+@Setter
 @Table(name = "appointments")
+@EqualsAndHashCode(exclude = {"schedule", "medicalRecord"})
+@ToString(exclude = {"schedule", "medicalRecord"})
 public class Appointment {
 
     @Id

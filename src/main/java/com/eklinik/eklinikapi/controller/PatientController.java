@@ -5,8 +5,10 @@ import com.eklinik.eklinikapi.dto.response.appointment.AppointmentResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
+import com.eklinik.eklinikapi.service.DoctorService;
 import com.eklinik.eklinikapi.service.PatientService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/patient")
@@ -22,6 +25,7 @@ import java.util.List;
 public class PatientController {
 
     private final PatientService patientService;
+    private final DoctorService doctorService;
 
     @GetMapping("/clinics")
     public ResponseEntity<List<ClinicResponse>> getAllClinics() {
@@ -37,7 +41,15 @@ public class PatientController {
     public ResponseEntity<List<ScheduleResponse>> getAvailableSlots(
             @PathVariable Long doctorId,
             @RequestParam("date") LocalDate date) {
-        return ResponseEntity.ok(patientService.getAvailableSlots(doctorId, date));
+        return ResponseEntity.ok(patientService.getSlotsByDoctorAndDate(doctorId, date));
+    }
+
+    @GetMapping("/doctors/{doctorId}/slots-in-range")
+    public ResponseEntity<Map<LocalDate, List<ScheduleResponse>>> getSlotsInRange(
+            @PathVariable Long doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(patientService.getSlotsForDateRange(doctorId, startDate, endDate));
     }
 
     @PostMapping("/appointments/{scheduleId}")
@@ -67,5 +79,10 @@ public class PatientController {
 
         AppointmentDetailForPatientResponse response = patientService.getMyAppointmentDetails(currentUser, appointmentId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/doctors/{doctorId}")
+    public ResponseEntity<DoctorResponse> getDoctorProfileById(@PathVariable Long doctorId) {
+        return ResponseEntity.ok(doctorService.getDoctorById(doctorId));
     }
 }
