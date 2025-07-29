@@ -207,6 +207,11 @@ public class DoctorServiceImpl implements DoctorService {
         return mapToMedicalRecordResponse(savedRecord);
     }
 
+    @Override
+    public long getTotalDoctorCount() {
+        return doctorRepository.count();
+    }
+
     private Doctor findDoctorEntityById(Long id) {
         return doctorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Doktor bulunamadı, ID: " + id));

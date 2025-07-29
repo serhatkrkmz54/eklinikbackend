@@ -11,4 +11,5 @@ public interface ClinicService {
     void deleteClinic(Integer id);
     ClinicResponse getClinicById(Integer id);
     List<ClinicResponse> getAllClinics();
+    long getTotalClinicCount();
 }

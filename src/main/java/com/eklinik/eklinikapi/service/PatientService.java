@@ -19,5 +19,6 @@ public interface PatientService {
     List<AppointmentResponse> getMyHistory(UserDetails currentUser);
     void cancelAppointment(UserDetails currentUser, Long appointmentId);
     AppointmentDetailForPatientResponse getMyAppointmentDetails(UserDetails currentUser, Long appointmentId);
+    long getTotalPatientCount();
 
 }

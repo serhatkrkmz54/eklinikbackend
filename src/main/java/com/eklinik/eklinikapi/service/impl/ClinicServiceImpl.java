@@ -61,6 +61,12 @@ public class ClinicServiceImpl implements ClinicService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public long getTotalClinicCount() {
+//        log.info("Toplam klinik sayısı sorgulanıyor.");
+        return clinicRepository.count();
+    }
+
     private Clinic findClinicEntityById(Integer id) {
         return clinicRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Klinik bulunamadı, ID: " + id));

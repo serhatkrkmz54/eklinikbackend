@@ -12,10 +12,7 @@ import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
-import com.eklinik.eklinikapi.service.AdminService;
-import com.eklinik.eklinikapi.service.ClinicService;
-import com.eklinik.eklinikapi.service.DoctorService;
-import com.eklinik.eklinikapi.service.ScheduleService;
+import com.eklinik.eklinikapi.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +21,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -36,11 +35,19 @@ public class AdminController {
     private final ClinicService clinicService;
     private final DoctorService doctorService;
     private final ScheduleService scheduleService;
+    private final PatientService patientService;
 
     @PostMapping("/create-user")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         UserResponse createdUser = adminService.createUser(request);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/patient-count")
+    public ResponseEntity<Map<String, Long>> getPatientCount() {
+        long count = patientService.getTotalPatientCount();
+        Map<String, Long> response = Collections.singletonMap("count", count);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/all-user")
@@ -85,6 +92,13 @@ public class AdminController {
         return new ResponseEntity<>(createdClinic, HttpStatus.CREATED);
     }
 
+    @GetMapping("/clinic-count")
+    public ResponseEntity<Map<String, Long>> getClinicCount() {
+        long count = clinicService.getTotalClinicCount();
+        Map<String, Long> response = Collections.singletonMap("count", count);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/all-clinics")
     public ResponseEntity<List<ClinicResponse>> getAllClinics() {
         return ResponseEntity.ok(clinicService.getAllClinics());
@@ -104,6 +118,13 @@ public class AdminController {
     public ResponseEntity<String> deleteClinic(@PathVariable Integer id) {
         clinicService.deleteClinic(id);
         return ResponseEntity.ok("Klinik başarıyla silindi, ID: " + id);
+    }
+
+    @GetMapping("/doctor-count")
+    public ResponseEntity<Map<String, Long>> getDoctorCount() {
+        long count = doctorService.getTotalDoctorCount();
+        Map<String, Long> response = Collections.singletonMap("count", count);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/create-doctors")

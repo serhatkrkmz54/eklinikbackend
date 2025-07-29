@@ -10,6 +10,7 @@ import com.eklinik.eklinikapi.dto.response.prescription.PrescriptionForPatientRe
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import com.eklinik.eklinikapi.enums.ScheduleStatus;
+import com.eklinik.eklinikapi.enums.UserRole;
 import com.eklinik.eklinikapi.model.*;
 import com.eklinik.eklinikapi.repository.*;
 import com.eklinik.eklinikapi.service.PatientService;
@@ -163,6 +164,11 @@ public class PatientServiceImpl implements PatientService {
                 .clinicName(doctor.getClinic().getName())
                 .medicalRecord(medicalRecordResponse)
                 .build();
+    }
+
+    @Override
+    public long getTotalPatientCount() {
+        return userRepository.countByRole(UserRole.ROLE_PATIENT);
     }
 
     private AppointmentResponse mapToAppointmentResponse(Appointment appointment) {
