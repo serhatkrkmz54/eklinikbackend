@@ -10,6 +10,7 @@ import com.eklinik.eklinikapi.dto.response.prescription.PrescriptionForPatientRe
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import com.eklinik.eklinikapi.enums.ScheduleStatus;
+import com.eklinik.eklinikapi.enums.UserRole;
 import com.eklinik.eklinikapi.exception.AppointmentRuleException;
 import com.eklinik.eklinikapi.model.*;
 import com.eklinik.eklinikapi.repository.*;
@@ -57,22 +58,22 @@ public class PatientServiceImpl implements PatientService {
                 .collect(toList());
     }
 
-    @Override
-    public List<ScheduleResponse> getSlotsByDoctorAndDate(Long doctorId, LocalDate date) {
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.atTime(23, 59, 59);
-
-        return scheduleRepository
-                .findByDoctorIdAndStartTimeBetweenOrderByStartTimeAsc(doctorId, startOfDay, endOfDay)
-                .stream()
-                .map(schedule -> ScheduleResponse.builder()
-                        .id(schedule.getId())
-                        .startTime(schedule.getStartTime())
-                        .endTime(schedule.getEndTime())
-                        .status(schedule.getStatus())
-                        .build())
-                .collect(toList());
-    }
+//    @Override
+//    public List<ScheduleResponse> getSlotsByDoctorAndDate(Long doctorId, LocalDate date) {
+//        LocalDateTime startOfDay = date.atStartOfDay();
+//        LocalDateTime endOfDay = date.atTime(23, 59, 59);
+//
+//        return scheduleRepository
+//                .findByDoctorIdAndStartTimeBetweenOrderByStartTimeAsc(doctorId, startOfDay, endOfDay)
+//                .stream()
+//                .map(schedule -> ScheduleResponse.builder()
+//                        .id(schedule.getId())
+//                        .startTime(schedule.getStartTime())
+//                        .endTime(schedule.getEndTime())
+//                        .status(schedule.getStatus())
+//                        .build())
+//                .collect(toList());
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -210,6 +211,11 @@ public class PatientServiceImpl implements PatientService {
                 .clinicName(doctor.getClinic().getName())
                 .medicalRecord(medicalRecordResponse)
                 .build();
+    }
+
+    @Override
+    public long getTotalPatientCount() {
+        return userRepository.countByRole(UserRole.ROLE_PATIENT);
     }
 
     private AppointmentResponse mapToAppointmentResponse(Appointment appointment) {

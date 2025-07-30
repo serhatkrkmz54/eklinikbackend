@@ -37,12 +37,12 @@ public class PatientController {
         return ResponseEntity.ok(patientService.getDoctorsByClinic(clinicId));
     }
 
-    @GetMapping("/doctors/{doctorId}/slots")
-    public ResponseEntity<List<ScheduleResponse>> getAvailableSlots(
-            @PathVariable Long doctorId,
-            @RequestParam("date") LocalDate date) {
-        return ResponseEntity.ok(patientService.getSlotsByDoctorAndDate(doctorId, date));
-    }
+//    @GetMapping("/doctors/{doctorId}/slots")
+//    public ResponseEntity<List<ScheduleResponse>> getAvailableSlots(
+//            @PathVariable Long doctorId,
+//            @RequestParam("date") LocalDate date) {
+//        return ResponseEntity.ok(patientService.getSlotsByDoctorAndDate(doctorId, date));
+//    }
 
     @GetMapping("/doctors/{doctorId}/slots-in-range")
     public ResponseEntity<Map<LocalDate, List<ScheduleResponse>>> getSlotsInRange(

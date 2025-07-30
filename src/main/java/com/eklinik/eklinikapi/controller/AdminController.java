@@ -12,9 +12,12 @@ import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
 import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
+import com.eklinik.eklinikapi.enums.UserRole;
 import com.eklinik.eklinikapi.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,10 +53,25 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/all-user")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = adminService.getAllUsers();
-        return ResponseEntity.ok(users);
+    @GetMapping("/users")
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String searchTerm,
+            // Değişiklik: Rolü String olarak alıp, boş veya "ALL" ise null olarak geçiyoruz.
+            @RequestParam(required = false) String role,
+            Pageable pageable
+    ) {
+        UserRole roleEnum = null;
+        if (role != null && !role.isEmpty() && !role.equalsIgnoreCase("ALL")) {
+            try {
+                roleEnum = UserRole.valueOf(role);
+            } catch (IllegalArgumentException e) {
+                // İsteğe bağlı: Geçersiz bir rol string'i gelirse loglayabilir veya hata dönebilirsiniz.
+                // Şimdilik null olarak devam etmesi yeterli.
+            }
+        }
+
+        Page<UserResponse> usersPage = adminService.getAllUsers(searchTerm, roleEnum, pageable);
+        return ResponseEntity.ok(usersPage);
     }
 
     @GetMapping("/users/{id}")

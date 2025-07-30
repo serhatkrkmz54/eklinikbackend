@@ -6,12 +6,17 @@ import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.enums.UserRole;
+import com.eklinik.eklinikapi.exception.ResourceAlreadyExistsException;
 import com.eklinik.eklinikapi.model.PatientProfile;
 import com.eklinik.eklinikapi.model.User;
 import com.eklinik.eklinikapi.repository.PatientProfileRepository;
 import com.eklinik.eklinikapi.repository.UserRepository;
+import com.eklinik.eklinikapi.repository.UserSpecification;
 import com.eklinik.eklinikapi.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,10 +33,10 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByNationalId(request.getNationalId())) {
-            throw new RuntimeException("Bu TC Kimlik Numarası zaten kayıtlı!");
+            throw new ResourceAlreadyExistsException("Bu TC Kimlik Numarası zaten kayıtlı!");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Bu e-posta adresi zaten kayıtlı!");
+            throw new ResourceAlreadyExistsException("Bu e-posta adresi zaten kayıtlı!");
         }
 
         User user = User.builder()
@@ -55,10 +60,16 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::mapToUserResponse)
-                .collect(Collectors.toList());
+    // Metod imzasını arayüze uygun hale getiriyoruz
+    public Page<UserResponse> getAllUsers(String searchTerm, UserRole role, Pageable pageable) {
+        // 1. Gelen kriterlere göre dinamik bir sorgu (Specification) oluşturuyoruz.
+        Specification<User> spec = UserSpecification.findByCriteria(searchTerm, role);
+
+        // 2. Repository'i bu dinamik sorgu ve sayfalama bilgisiyle çağırıyoruz.
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        // 3. Sonucu UserResponse'a çevirip döndürüyoruz.
+        return userPage.map(this::mapToUserResponse);
     }
 
     @Override
@@ -133,7 +144,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private UserResponse mapToUserResponse(User user) {
-        return UserResponse.builder()
+        UserResponse.UserResponseBuilder responseBuilder = UserResponse.builder()
                 .id(user.getId())
                 .nationalId(user.getNationalId())
                 .email(user.getEmail())
@@ -141,8 +152,12 @@ public class AdminServiceImpl implements AdminService {
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
-                .createdAt(user.getCreatedAt())
-                .build();
+                .createdAt(user.getCreatedAt());
+        if (user.getPatientProfile() != null) {
+            responseBuilder.patientProfile(mapToPatientProfileResponse(user.getPatientProfile()));
+        }
+
+        return responseBuilder.build();
     }
     private PatientProfileResponse mapToPatientProfileResponse(PatientProfile entity) {
         return PatientProfileResponse.builder()
