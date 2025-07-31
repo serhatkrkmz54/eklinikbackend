@@ -25,7 +25,6 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @SQLDelete(sql = "UPDATE users SET deleted = true WHERE id=?")
-@Where(clause = "deleted=false")
 public class User implements UserDetails {
 
     @Override

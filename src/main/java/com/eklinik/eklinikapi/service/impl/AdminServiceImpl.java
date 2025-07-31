@@ -60,15 +60,9 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    // Metod imzasını arayüze uygun hale getiriyoruz
-    public Page<UserResponse> getAllUsers(String searchTerm, UserRole role, Pageable pageable) {
-        // 1. Gelen kriterlere göre dinamik bir sorgu (Specification) oluşturuyoruz.
-        Specification<User> spec = UserSpecification.findByCriteria(searchTerm, role);
-
-        // 2. Repository'i bu dinamik sorgu ve sayfalama bilgisiyle çağırıyoruz.
+    public Page<UserResponse> getAllUsers(String searchTerm, UserRole role, Pageable pageable, String status) {
+        Specification<User> spec = UserSpecification.findByCriteria(searchTerm, role, status);
         Page<User> userPage = userRepository.findAll(spec, pageable);
-
-        // 3. Sonucu UserResponse'a çevirip döndürüyoruz.
         return userPage.map(this::mapToUserResponse);
     }
 
@@ -143,6 +137,18 @@ public class AdminServiceImpl implements AdminService {
         return mapToPatientProfileResponse(updatedProfile);
     }
 
+    @Override
+    public UserResponse reactivateUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceAlreadyExistsException("Kullanıcı bulunamadı, ID: " + id));
+        if (!user.isDeleted()) {
+            throw new ResourceAlreadyExistsException("Kullanıcı zaten aktif durumda.");
+        }
+        user.setDeleted(false);
+        User savedUser = userRepository.save(user);
+        return mapToUserResponse(savedUser);
+    }
+
     private UserResponse mapToUserResponse(User user) {
         UserResponse.UserResponseBuilder responseBuilder = UserResponse.builder()
                 .id(user.getId())
@@ -151,6 +157,7 @@ public class AdminServiceImpl implements AdminService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
+                .deleted(user.isDeleted())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt());
         if (user.getPatientProfile() != null) {

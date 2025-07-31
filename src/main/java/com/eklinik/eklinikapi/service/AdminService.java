@@ -13,9 +13,10 @@ import java.util.List;
 
 public interface AdminService {
     UserResponse createUser(CreateUserRequest request);
-    Page<UserResponse> getAllUsers(String searchTerm, UserRole role, Pageable pageable);
+    Page<UserResponse> getAllUsers(String searchTerm, UserRole role, Pageable pageable, String status);
     UserResponse getUserById(Long id);
     void deleteUser(Long id);
     UserResponse updateUser(Long id, UpdateUserRequest request);
     PatientProfileResponse updatePatientProfile(Long userId, PatientProfileRequest request);
+    UserResponse reactivateUser(Long id);
 }

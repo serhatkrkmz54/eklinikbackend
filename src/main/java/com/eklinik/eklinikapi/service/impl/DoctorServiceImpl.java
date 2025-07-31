@@ -212,6 +212,13 @@ public class DoctorServiceImpl implements DoctorService {
         return doctorRepository.count();
     }
 
+    @Override
+    public DoctorResponse getDoctorByUserId(Long userId) {
+        Doctor doctor = doctorRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Bu kullanıcı ID'sine sahip bir doktor profili bulunamadı: " + userId));
+        return mapToDoctorResponse(doctor);
+    }
+
     private Doctor findDoctorEntityById(Long id) {
         return doctorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Doktor bulunamadı, ID: " + id));

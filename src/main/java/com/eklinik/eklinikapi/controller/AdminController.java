@@ -56,8 +56,8 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false) String searchTerm,
-            // Değişiklik: Rolü String olarak alıp, boş veya "ALL" ise null olarak geçiyoruz.
             @RequestParam(required = false) String role,
+            @RequestParam(required = false, defaultValue = "ALL") String status,
             Pageable pageable
     ) {
         UserRole roleEnum = null;
@@ -65,12 +65,11 @@ public class AdminController {
             try {
                 roleEnum = UserRole.valueOf(role);
             } catch (IllegalArgumentException e) {
-                // İsteğe bağlı: Geçersiz bir rol string'i gelirse loglayabilir veya hata dönebilirsiniz.
-                // Şimdilik null olarak devam etmesi yeterli.
+                return null;
             }
         }
 
-        Page<UserResponse> usersPage = adminService.getAllUsers(searchTerm, roleEnum, pageable);
+        Page<UserResponse> usersPage = adminService.getAllUsers(searchTerm, roleEnum, pageable, status);
         return ResponseEntity.ok(usersPage);
     }
 
@@ -84,6 +83,12 @@ public class AdminController {
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         adminService.deleteUser(id);
         return ResponseEntity.ok("Kullanıcı başarıyla silindi, ID: " + id);
+    }
+
+    @PatchMapping("/reactivate/users/{id}")
+    public ResponseEntity<UserResponse> reactivateUser(@PathVariable Long id) {
+        UserResponse userResponse = adminService.reactivateUser(id);
+        return ResponseEntity.ok(userResponse);
     }
 
     @PutMapping("/update/users/{id}")
@@ -159,6 +164,11 @@ public class AdminController {
     @GetMapping("/get-doctors/{id}")
     public ResponseEntity<DoctorResponse> getDoctorById(@PathVariable Long id) {
         return ResponseEntity.ok(doctorService.getDoctorById(id));
+    }
+
+    @GetMapping("/get-doctors/by-user/{userId}")
+    public ResponseEntity<DoctorResponse> getDoctorByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(doctorService.getDoctorByUserId(userId));
     }
 
     @PutMapping("/update-doctors/doctors/{id}")

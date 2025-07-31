@@ -22,5 +22,6 @@ public interface DoctorService {
     AppointmentDetailForDoctorResponse getAppointmentDetails(UserDetails currentUser, Long appointmentId);
     MedicalRecordResponse completeAppointment(UserDetails currentUser, Long appointmentId, CompleteAppointmentRequest request);
     long getTotalDoctorCount();
+    DoctorResponse getDoctorByUserId(Long userId);
 
 }

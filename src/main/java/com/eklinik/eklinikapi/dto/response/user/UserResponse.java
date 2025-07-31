@@ -17,5 +17,6 @@ public class UserResponse {
     private String phoneNumber;
     private UserRole role;
     private LocalDateTime createdAt;
+    private boolean deleted;
     private PatientProfileResponse patientProfile;
 }
