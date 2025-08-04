@@ -41,7 +41,8 @@ public class ClinicServiceImpl implements ClinicService {
         Clinic clinicToUpdate = findClinicEntityById(id);
         clinicToUpdate.setName(request.getName());
         Clinic updatedClinic = clinicRepository.save(clinicToUpdate);
-        return mapToClinicResponse(updatedClinic);    }
+        return mapToClinicResponse(updatedClinic);
+    }
 
     @Override
     public void deleteClinic(Integer id) {

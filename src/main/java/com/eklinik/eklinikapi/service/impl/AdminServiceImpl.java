@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,11 +75,10 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Silinecek kullanıcı bulunamadı, ID: " + id);
-        }
         userRepository.deleteById(id);
+        patientProfileRepository.deleteById(id);
     }
 
     @Override
@@ -138,15 +138,23 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Transactional
     public UserResponse reactivateUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceAlreadyExistsException("Kullanıcı bulunamadı, ID: " + id));
+        User user = userRepository.findByIdEvenIfDeleted(id)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı, ID: " + id));
+
         if (!user.isDeleted()) {
             throw new ResourceAlreadyExistsException("Kullanıcı zaten aktif durumda.");
         }
-        user.setDeleted(false);
-        User savedUser = userRepository.save(user);
-        return mapToUserResponse(savedUser);
+        userRepository.reactivateUserById(id);
+
+        if (user.getRole() == UserRole.ROLE_PATIENT) {
+            patientProfileRepository.reactivateProfileById(id);
+        }
+        User reactivatedUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reaktif edilen kullanıcı bulunamadı, ID: " + id));
+
+        return mapToUserResponse(reactivatedUser);
     }
 
     private UserResponse mapToUserResponse(User user) {
