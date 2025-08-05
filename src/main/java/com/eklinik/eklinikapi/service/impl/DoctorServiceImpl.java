@@ -233,6 +233,7 @@ public class DoctorServiceImpl implements DoctorService {
                 .lastName(doctor.getUser().getLastName())
                 .phoneNumber(doctor.getUser().getPhoneNumber())
                 .role(doctor.getUser().getRole())
+                .createdAt(doctor.getUser().getCreatedAt())
                 .build();
 
         ClinicResponse clinicResponse = ClinicResponse.builder()
