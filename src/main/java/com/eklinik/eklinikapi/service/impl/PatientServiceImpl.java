@@ -105,6 +105,7 @@ public class PatientServiceImpl implements PatientService {
         Schedule scheduleToBook = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new AppointmentRuleException("Randevu zaman dilimi bulunamadı."));
 
+        // --- Mevcut Kontrollerin (Bunlar doğru ve kalmalı) ---
         if (scheduleToBook.getStartTime().isBefore(LocalDateTime.now())) {
             throw new AppointmentRuleException("Geçmiş tarihli bir saate randevu alamazsınız.");
         }
@@ -128,24 +129,44 @@ public class PatientServiceImpl implements PatientService {
             throw new AppointmentRuleException("Aynı doktordan 15 gün içinde sadece bir randevu alabilirsiniz.");
         }
 
+        // --- YENİ VE DÜZELTİLMİŞ MANTIK ---
+
+        // 1. Bu zaman dilimi için daha önceden oluşturulmuş bir randevu kaydı var mı diye kontrol et.
+        Appointment appointment = appointmentRepository.findByScheduleId(scheduleId)
+                .orElse(null); // Eğer yoksa null döner.
+
+        if (appointment != null) {
+            // Eğer varsa (bu, daha önce iptal edilmiş bir randevu demektir), YENİ BİR TANE OLUŞTURMA.
+            // Mevcut olanı GÜNCELLE.
+            log.info("Mevcut iptal edilmiş randevu (ID: {}) yeniden alınıyor.", appointment.getId());
+            appointment.setPatient(patient); // Yeni hastayı ata
+            appointment.setStatus(AppointmentStatus.SCHEDULED); // Durumu "Planlandı" yap
+            appointment.setAppointmentTime(scheduleToBook.getStartTime()); // Zamanı teyit et
+        } else {
+            // Eğer hiç yoksa, YENİ BİR TANE OLUŞTUR.
+            log.info("Bu zaman dilimi için yeni bir randevu oluşturuluyor.");
+            appointment = Appointment.builder()
+                    .patient(patient)
+                    .doctor(scheduleToBook.getDoctor())
+                    .schedule(scheduleToBook)
+                    .appointmentTime(scheduleToBook.getStartTime())
+                    .status(AppointmentStatus.SCHEDULED)
+                    .build();
+        }
+
+        // Hem yeni hem de güncellenmiş randevuyu kaydet.
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // Takvim slotunun durumunu "Dolu" olarak güncelle.
         scheduleToBook.setStatus(ScheduleStatus.BOOKED);
         Schedule updatedSchedule = scheduleRepository.save(scheduleToBook);
 
-        Appointment newAppointment = Appointment.builder()
-                .patient(patient)
-                .doctor(scheduleToBook.getDoctor())
-                .schedule(scheduleToBook)
-                .appointmentTime(scheduleToBook.getStartTime())
-                .status(AppointmentStatus.SCHEDULED)
-                .build();
-
-        Appointment savedAppointment = appointmentRepository.save(newAppointment);
+        // WebSocket mesajını gönder.
         String topic = String.format("/topic/slots/%d/%s",
-                doctor.getId(),
+                scheduleToBook.getDoctor().getId(),
                 updatedSchedule.getStartTime().toLocalDate().toString()
         );
         messagingTemplate.convertAndSend(topic, new ScheduleResponse(updatedSchedule));
-
 
         return mapToAppointmentResponse(savedAppointment);
     }
@@ -179,7 +200,13 @@ public class PatientServiceImpl implements PatientService {
 
         Schedule scheduleToFree = appointmentToCancel.getSchedule();
         scheduleToFree.setStatus(ScheduleStatus.AVAILABLE);
-        scheduleRepository.save(scheduleToFree);
+        Schedule updatedSchedule = scheduleRepository.save(scheduleToFree);
+
+        String topic = String.format("/topic/slots/%d/%s",
+                scheduleToFree.getDoctor().getId(),
+                updatedSchedule.getStartTime().toLocalDate().toString()
+        );
+        messagingTemplate.convertAndSend(topic, new ScheduleResponse(updatedSchedule));
     }
 
     @Override
