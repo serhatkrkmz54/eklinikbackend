@@ -23,5 +23,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     );
 
     Optional<Appointment> findByScheduleId(Long scheduleId);
+    long countByStatusInAndAppointmentTimeBetween(List<AppointmentStatus> statuses, LocalDateTime start, LocalDateTime end);
 
 }

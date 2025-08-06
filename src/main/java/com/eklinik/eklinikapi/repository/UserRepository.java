@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -35,4 +36,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             nativeQuery = true
     )
     void reactivateUserById(@Param("id") Long id);
+
+    long countByRoleAndCreatedAtBetween(UserRole role, LocalDateTime start, LocalDateTime end);
 }

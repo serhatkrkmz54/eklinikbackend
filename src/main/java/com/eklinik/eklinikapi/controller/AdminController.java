@@ -6,6 +6,7 @@ import com.eklinik.eklinikapi.dto.request.schedule.ScheduleGenerationRequest;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
+import com.eklinik.eklinikapi.dto.response.user.MonthlyNewPatientDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.clinics.ClinicRequest;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
@@ -71,6 +72,19 @@ public class AdminController {
 
         Page<UserResponse> usersPage = adminService.getAllUsers(searchTerm, roleEnum, pageable, status);
         return ResponseEntity.ok(usersPage);
+    }
+
+    @GetMapping("/daily-appointments")
+    public ResponseEntity<Map<String, Long>> getDailyAppointmentCount() {
+        long count = adminService.getDailyAppointmentCount();
+        Map<String, Long> response = Map.of("count", count);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/monthly-new-patients")
+    public ResponseEntity<List<MonthlyNewPatientDataResponse>> getMonthlyNewPatientRegistrations() {
+        List<MonthlyNewPatientDataResponse> data = adminService.getMonthlyNewPatientRegistrations();
+        return ResponseEntity.ok(data);
     }
 
     @GetMapping("/users/{id}")
