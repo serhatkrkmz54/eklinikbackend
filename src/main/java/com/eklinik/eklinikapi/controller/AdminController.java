@@ -6,6 +6,8 @@ import com.eklinik.eklinikapi.dto.request.schedule.ScheduleGenerationRequest;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentResponse;
+import com.eklinik.eklinikapi.dto.response.clinics.ClinicAppointmentCountDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.MonthlyNewPatientDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.clinics.ClinicRequest;
@@ -14,6 +16,8 @@ import com.eklinik.eklinikapi.dto.response.schedule.ScheduleResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.dto.response.clinics.ClinicResponse;
 import com.eklinik.eklinikapi.enums.UserRole;
+import com.eklinik.eklinikapi.model.EmergencyCall;
+import com.eklinik.eklinikapi.repository.EmergencyCallRepository;
 import com.eklinik.eklinikapi.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +44,14 @@ public class AdminController {
     private final DoctorService doctorService;
     private final ScheduleService scheduleService;
     private final PatientService patientService;
+    private final EmergencyCallRepository emergencyCallRepository;
+
+
+    @GetMapping("/emergency-logs")
+    public ResponseEntity<List<EmergencyCall>> getEmergencyCallLogs() {
+        List<EmergencyCall> logs = emergencyCallRepository.findAllByOrderByCallTimeDesc();
+        return ResponseEntity.ok(logs);
+    }
 
     @PostMapping("/create-user")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
@@ -52,6 +64,16 @@ public class AdminController {
         long count = patientService.getTotalPatientCount();
         Map<String, Long> response = Collections.singletonMap("count", count);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/clinic-appointment-density")
+    public ResponseEntity<List<ClinicAppointmentCountDataResponse>> getClinicAppointmentDensity() {
+        return ResponseEntity.ok(adminService.getAppointmentCountsByClinic());
+    }
+
+    @GetMapping("/upcoming-appointments")
+    public ResponseEntity<List<UpcomingAppointmentResponse>> getUpcomingAppointments() {
+        return ResponseEntity.ok(adminService.getUpcomingAppointments());
     }
 
     @GetMapping("/users")

@@ -3,6 +3,8 @@ package com.eklinik.eklinikapi.service;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentResponse;
+import com.eklinik.eklinikapi.dto.response.clinics.ClinicAppointmentCountDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.MonthlyNewPatientDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
@@ -22,4 +24,6 @@ public interface AdminService {
     UserResponse reactivateUser(Long id);
     long getDailyAppointmentCount();
     List<MonthlyNewPatientDataResponse> getMonthlyNewPatientRegistrations();
+    List<ClinicAppointmentCountDataResponse> getAppointmentCountsByClinic();
+    List<UpcomingAppointmentResponse> getUpcomingAppointments();
 }

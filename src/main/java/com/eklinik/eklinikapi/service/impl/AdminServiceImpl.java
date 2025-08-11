@@ -3,12 +3,15 @@ package com.eklinik.eklinikapi.service.impl;
 import com.eklinik.eklinikapi.dto.request.user.PatientProfileRequest;
 import com.eklinik.eklinikapi.dto.request.admin.CreateUserRequest;
 import com.eklinik.eklinikapi.dto.request.admin.UpdateUserRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentResponse;
+import com.eklinik.eklinikapi.dto.response.clinics.ClinicAppointmentCountDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.MonthlyNewPatientDataResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.enums.AppointmentStatus;
 import com.eklinik.eklinikapi.enums.UserRole;
 import com.eklinik.eklinikapi.exception.ResourceAlreadyExistsException;
+import com.eklinik.eklinikapi.model.Appointment;
 import com.eklinik.eklinikapi.model.PatientProfile;
 import com.eklinik.eklinikapi.model.User;
 import com.eklinik.eklinikapi.repository.AppointmentRepository;
@@ -211,6 +214,41 @@ public class AdminServiceImpl implements AdminService {
 
         Collections.reverse(monthlyData);
         return monthlyData;
+    }
+
+    @Override
+    public List<ClinicAppointmentCountDataResponse> getAppointmentCountsByClinic() {
+        YearMonth currentMonth = YearMonth.now();
+        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = currentMonth.plusMonths(1).atDay(1).atStartOfDay();
+
+        return appointmentRepository.findAppointmentCountsByClinicForMonth(startOfMonth, endOfMonth);
+    }
+
+    @Override
+    public List<UpcomingAppointmentResponse> getUpcomingAppointments() {
+        List<Appointment> appointments = appointmentRepository
+                .findTop5ByStatusAndAppointmentTimeAfterOrderByAppointmentTimeAsc(
+                        AppointmentStatus.SCHEDULED,
+                        LocalDateTime.now()
+                );
+
+        return appointments.stream()
+                .map(this::mapToUpcomingAppointmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    private UpcomingAppointmentResponse mapToUpcomingAppointmentResponse(Appointment apt) {
+        String patientName = apt.getPatient().getFirstName() + " " + apt.getPatient().getLastName();
+        String doctorName = apt.getDoctor().getUser().getFirstName() + " " + apt.getDoctor().getUser().getLastName();
+
+        return UpcomingAppointmentResponse.builder()
+                .appointmentId(apt.getId())
+                .patientFullName(patientName)
+                .doctorFullName("Dr. " + doctorName)
+                .clinicName(apt.getDoctor().getClinic().getName())
+                .appointmentTime(apt.getAppointmentTime())
+                .build();
     }
 
     private UserResponse mapToUserResponse(User user) {
