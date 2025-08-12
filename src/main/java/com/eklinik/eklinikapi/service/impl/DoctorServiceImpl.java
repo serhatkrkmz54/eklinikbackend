@@ -1,6 +1,7 @@
 package com.eklinik.eklinikapi.service.impl;
 
 import com.eklinik.eklinikapi.dto.request.doctor.UpdateDoctorRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -217,6 +219,46 @@ public class DoctorServiceImpl implements DoctorService {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Bu kullanıcı ID'sine sahip bir doktor profili bulunamadı: " + userId));
         return mapToDoctorResponse(doctor);
+    }
+
+    @Override
+    public List<LocalDate> getAppointmentDatesForMonth(UserDetails currentUser, YearMonth month) {
+        Doctor doctor = findDoctorByUser(currentUser);
+        LocalDateTime startOfMonth = month.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = month.plusMonths(1).atDay(1).atStartOfDay();
+
+        return appointmentRepository.findDistinctAppointmentDatesByDoctorForMonth(
+                doctor.getId(),
+                startOfMonth,
+                endOfMonth
+        );
+    }
+
+    @Override
+    public List<UpcomingAppointmentForDoctorResponse> getUpcomingAppointmentsForDoctor(UserDetails currentUser) {
+        Doctor doctor = findDoctorByUser(currentUser); // Mevcut yardımcı metodunuz
+
+        List<Appointment> appointments = appointmentRepository
+                .findTop5ByDoctorIdAndStatusAndAppointmentTimeAfterOrderByAppointmentTimeAsc(
+                        doctor.getId(),
+                        AppointmentStatus.SCHEDULED,
+                        LocalDateTime.now()
+                );
+
+        return appointments.stream()
+                .map(this::mapToUpcomingAppointmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    private UpcomingAppointmentForDoctorResponse mapToUpcomingAppointmentResponse(Appointment apt) {
+        String patientName = apt.getPatient().getFirstName() + " " + apt.getPatient().getLastName();
+
+        return UpcomingAppointmentForDoctorResponse.builder()
+                .appointmentId(apt.getId())
+                .patientFullName(patientName)
+                .status(apt.getStatus())
+                .appointmentTime(apt.getAppointmentTime())
+                .build();
     }
 
     private Doctor findDoctorEntityById(Long id) {

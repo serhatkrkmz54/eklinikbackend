@@ -1,5 +1,6 @@
 package com.eklinik.eklinikapi.service.impl;
 
+import com.eklinik.eklinikapi.dto.response.appointment.NewAppointmentNotificationResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.response.appointment.AppointmentDetailForPatientResponse;
 import com.eklinik.eklinikapi.dto.response.appointment.AppointmentResponse;
@@ -58,23 +59,6 @@ public class PatientServiceImpl implements PatientService {
                 .collect(toList());
     }
 
-//    @Override
-//    public List<ScheduleResponse> getSlotsByDoctorAndDate(Long doctorId, LocalDate date) {
-//        LocalDateTime startOfDay = date.atStartOfDay();
-//        LocalDateTime endOfDay = date.atTime(23, 59, 59);
-//
-//        return scheduleRepository
-//                .findByDoctorIdAndStartTimeBetweenOrderByStartTimeAsc(doctorId, startOfDay, endOfDay)
-//                .stream()
-//                .map(schedule -> ScheduleResponse.builder()
-//                        .id(schedule.getId())
-//                        .startTime(schedule.getStartTime())
-//                        .endTime(schedule.getEndTime())
-//                        .status(schedule.getStatus())
-//                        .build())
-//                .collect(toList());
-//    }
-
     @Override
     @Transactional(readOnly = true)
     public Map<LocalDate, List<ScheduleResponse>> getSlotsForDateRange(Long doctorId, LocalDate startDate, LocalDate endDate) {
@@ -105,7 +89,6 @@ public class PatientServiceImpl implements PatientService {
         Schedule scheduleToBook = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new AppointmentRuleException("Randevu zaman dilimi bulunamadı."));
 
-        // --- Mevcut Kontrollerin (Bunlar doğru ve kalmalı) ---
         if (scheduleToBook.getStartTime().isBefore(LocalDateTime.now())) {
             throw new AppointmentRuleException("Geçmiş tarihli bir saate randevu alamazsınız.");
         }
@@ -129,21 +112,16 @@ public class PatientServiceImpl implements PatientService {
             throw new AppointmentRuleException("Aynı doktordan 15 gün içinde sadece bir randevu alabilirsiniz.");
         }
 
-        // --- YENİ VE DÜZELTİLMİŞ MANTIK ---
-
-        // 1. Bu zaman dilimi için daha önceden oluşturulmuş bir randevu kaydı var mı diye kontrol et.
         Appointment appointment = appointmentRepository.findByScheduleId(scheduleId)
-                .orElse(null); // Eğer yoksa null döner.
+                .orElse(null);
 
         if (appointment != null) {
-            // Eğer varsa (bu, daha önce iptal edilmiş bir randevu demektir), YENİ BİR TANE OLUŞTURMA.
-            // Mevcut olanı GÜNCELLE.
+
             log.info("Mevcut iptal edilmiş randevu (ID: {}) yeniden alınıyor.", appointment.getId());
-            appointment.setPatient(patient); // Yeni hastayı ata
-            appointment.setStatus(AppointmentStatus.SCHEDULED); // Durumu "Planlandı" yap
-            appointment.setAppointmentTime(scheduleToBook.getStartTime()); // Zamanı teyit et
+            appointment.setPatient(patient);
+            appointment.setStatus(AppointmentStatus.SCHEDULED);
+            appointment.setAppointmentTime(scheduleToBook.getStartTime());
         } else {
-            // Eğer hiç yoksa, YENİ BİR TANE OLUŞTUR.
             log.info("Bu zaman dilimi için yeni bir randevu oluşturuluyor.");
             appointment = Appointment.builder()
                     .patient(patient)
@@ -154,20 +132,34 @@ public class PatientServiceImpl implements PatientService {
                     .build();
         }
 
-        // Hem yeni hem de güncellenmiş randevuyu kaydet.
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
-        // Takvim slotunun durumunu "Dolu" olarak güncelle.
         scheduleToBook.setStatus(ScheduleStatus.BOOKED);
         Schedule updatedSchedule = scheduleRepository.save(scheduleToBook);
 
-        // WebSocket mesajını gönder.
-        String topic = String.format("/topic/slots/%d/%s",
+        String publicTopic = String.format("/topic/slots/%d/%s",
                 scheduleToBook.getDoctor().getId(),
                 updatedSchedule.getStartTime().toLocalDate().toString()
         );
-        messagingTemplate.convertAndSend(topic, new ScheduleResponse(updatedSchedule));
+        messagingTemplate.convertAndSend(publicTopic, new ScheduleResponse(updatedSchedule));
+        log.info("Public slot update sent to: {}", publicTopic);
+        Doctor doctorr = scheduleToBook.getDoctor();
+        String doctorUsername = doctorr.getUser().getNationalId();
 
+        NewAppointmentNotificationResponse notification = NewAppointmentNotificationResponse.builder()
+                .patientFullName(patient.getFirstName() + " " + patient.getLastName())
+                .appointmentTime(scheduleToBook.getStartTime())
+                .message("Yeni bir randevu aldınız.")
+                .build();
+
+        // `convertAndSendToUser` metodu, mesajı Spring'in yönettiği özel bir kanala gönderir.
+        // Spring, bunu otomatik olarak "/user/{username}/queue/notifications" hedefine çevirir.
+        messagingTemplate.convertAndSendToUser(
+                doctorUsername,
+                "/queue/notifications",
+                notification
+        );
+        log.info("Private notification sent to doctor: {}", doctorUsername);
         return mapToAppointmentResponse(savedAppointment);
     }
 

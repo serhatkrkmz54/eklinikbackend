@@ -3,6 +3,7 @@ package com.eklinik.eklinikapi.service;
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.UpdateDoctorRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentDetailForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
@@ -10,6 +11,7 @@ import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordResponse;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 public interface DoctorService {
@@ -23,5 +25,6 @@ public interface DoctorService {
     MedicalRecordResponse completeAppointment(UserDetails currentUser, Long appointmentId, CompleteAppointmentRequest request);
     long getTotalDoctorCount();
     DoctorResponse getDoctorByUserId(Long userId);
-
+    List<LocalDate> getAppointmentDatesForMonth(UserDetails currentUser, YearMonth month);
+    List<UpcomingAppointmentForDoctorResponse> getUpcomingAppointmentsForDoctor(UserDetails currentUser);
 }

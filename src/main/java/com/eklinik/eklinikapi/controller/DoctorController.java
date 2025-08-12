@@ -1,12 +1,14 @@
 package com.eklinik.eklinikapi.controller;
 
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
+import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentDetailForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordResponse;
 import com.eklinik.eklinikapi.service.DoctorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -52,4 +55,20 @@ public class DoctorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/appointments/monthly-overview")
+    public ResponseEntity<List<LocalDate>> getMonthlyAppointmentOverview(
+            @AuthenticationPrincipal UserDetails currentUser,
+            @RequestParam("month") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month) {
+
+        YearMonth yearMonth = YearMonth.from(month);
+        List<LocalDate> dates = doctorService.getAppointmentDatesForMonth(currentUser, yearMonth);
+        return ResponseEntity.ok(dates);
+    }
+
+    @GetMapping("/appointments/upcoming")
+    public ResponseEntity<List<UpcomingAppointmentForDoctorResponse>> getUpcomingAppointments(
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        return ResponseEntity.ok(doctorService.getUpcomingAppointmentsForDoctor(currentUser));
+    }
 }
