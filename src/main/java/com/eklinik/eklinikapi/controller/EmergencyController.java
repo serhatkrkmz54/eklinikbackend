@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/emergency")
 @RequiredArgsConstructor
@@ -37,7 +34,6 @@ public class EmergencyController {
         User patient = null;
         String callerName = "Acil Durum Çağrısı (Giriş Yapılmamış)";
 
-        // Eğer kullanıcı giriş yapmışsa bilgilerini al
         if (currentUser != null) {
             patient = userRepository.findByNationalId(currentUser.getUsername()).orElse(null);
             if (patient != null) {
@@ -45,7 +41,6 @@ public class EmergencyController {
             }
         }
 
-        // 1. Gelen çağrıyı veritabanına kaydet
         EmergencyCall callLog = EmergencyCall.builder()
                 .patient(patient)
                 .callerName(callerName)
@@ -56,9 +51,8 @@ public class EmergencyController {
                 .build();
         emergencyCallRepository.save(callLog);
 
-        // 2. WebSocket ile admin paneline uyarıyı gönder
         EmergencyCallResponse response = EmergencyCallResponse.builder()
-                .callId(callLog.getId()) // ID'yi kaydedilen entity'den al
+                .callId(callLog.getId())
                 .patientFullName(callerName)
                 .address(request.getAddress())
                 .latitude(request.getLatitude())

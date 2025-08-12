@@ -31,7 +31,7 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
         String role = authentication.getAuthorities().stream()
-                .findFirst() // Sadece bir rol olduğu için ilkini alıyoruz
+                .findFirst()
                 .map(GrantedAuthority::getAuthority)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı rolü bulunamadı."));
 

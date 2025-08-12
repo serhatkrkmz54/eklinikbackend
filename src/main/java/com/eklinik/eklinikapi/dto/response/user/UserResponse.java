@@ -1,5 +1,6 @@
 package com.eklinik.eklinikapi.dto.response.user;
 
+import com.eklinik.eklinikapi.dto.response.doctor.DoctorInfoForProfile;
 import com.eklinik.eklinikapi.enums.UserRole;
 import lombok.Builder;
 import lombok.Data;
@@ -19,4 +20,6 @@ public class UserResponse {
     private LocalDateTime createdAt;
     private boolean deleted;
     private PatientProfileResponse patientProfile;
+    private DoctorInfoForProfile doctorInfo;
+
 }

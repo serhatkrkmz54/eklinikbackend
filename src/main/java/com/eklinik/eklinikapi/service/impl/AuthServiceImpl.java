@@ -1,5 +1,6 @@
 package com.eklinik.eklinikapi.service.impl;
 
+import com.eklinik.eklinikapi.dto.response.doctor.DoctorInfoForProfile;
 import com.eklinik.eklinikapi.dto.response.user.PatientProfileResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.user.LoginRequest;
@@ -10,6 +11,7 @@ import com.eklinik.eklinikapi.enums.UserRole;
 import com.eklinik.eklinikapi.exception.RegistrationException;
 import com.eklinik.eklinikapi.model.PatientProfile;
 import com.eklinik.eklinikapi.model.User;
+import com.eklinik.eklinikapi.repository.DoctorRepository;
 import com.eklinik.eklinikapi.repository.UserRepository;
 import com.eklinik.eklinikapi.security.JwtTokenProvider;
 import com.eklinik.eklinikapi.service.AuthService;
@@ -36,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final DoctorRepository doctorRepository;
 
     @Override
     public LoginResponse registerPatient(RegisterPatientCombinatedRequest registerRequest) {
@@ -171,6 +174,16 @@ public class AuthServiceImpl implements AuthService {
                     .build();
 
             builder.patientProfile(profileResponse);
+        }
+
+        if (user.getRole() == UserRole.ROLE_DOCTOR) {
+            doctorRepository.findByUser(user).ifPresent(doctor -> {
+                DoctorInfoForProfile doctorInfo = DoctorInfoForProfile.builder()
+                        .title(doctor.getTitle())
+                        .clinicName(doctor.getClinic().getName())
+                        .build();
+                builder.doctorInfo(doctorInfo);
+            });
         }
 
         return builder.build();
