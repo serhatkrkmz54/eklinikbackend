@@ -101,10 +101,10 @@ public class PatientServiceImpl implements PatientService {
         LocalDateTime fifteenDaysAgo = LocalDateTime.now().minusDays(15);
 
         boolean hasRecentAppointment = appointmentRepository
-                .existsByPatientIdAndDoctorIdAndStatusNotAndAppointmentTimeAfter(
+                .existsByPatientIdAndDoctorIdAndStatusNotInAndAppointmentTimeAfter(
                         patient.getId(),
                         doctor.getId(),
-                        AppointmentStatus.CANCELLED,
+                        List.of(AppointmentStatus.CANCELLED, AppointmentStatus.MISSED),
                         fifteenDaysAgo
                 );
 
@@ -142,7 +142,7 @@ public class PatientServiceImpl implements PatientService {
                 updatedSchedule.getStartTime().toLocalDate().toString()
         );
         messagingTemplate.convertAndSend(publicTopic, new ScheduleResponse(updatedSchedule));
-        log.info("Public slot update sent to: {}", publicTopic);
+//        log.info("Public slot update sent to: {}", publicTopic);
         Doctor doctorr = scheduleToBook.getDoctor();
         String doctorUsername = doctorr.getUser().getNationalId();
 
@@ -152,14 +152,12 @@ public class PatientServiceImpl implements PatientService {
                 .message("Yeni bir randevu aldınız.")
                 .build();
 
-        // `convertAndSendToUser` metodu, mesajı Spring'in yönettiği özel bir kanala gönderir.
-        // Spring, bunu otomatik olarak "/user/{username}/queue/notifications" hedefine çevirir.
         messagingTemplate.convertAndSendToUser(
                 doctorUsername,
                 "/queue/notifications",
                 notification
         );
-        log.info("Private notification sent to doctor: {}", doctorUsername);
+//        log.info("Private notification sent to doctor: {}", doctorUsername);
         return mapToAppointmentResponse(savedAppointment);
     }
 

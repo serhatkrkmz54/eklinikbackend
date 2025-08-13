@@ -2,6 +2,8 @@ package com.eklinik.eklinikapi.service.impl;
 
 import com.eklinik.eklinikapi.dto.request.doctor.UpdateDoctorRequest;
 import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoctorResponse;
+import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordForDoctorResponse;
+import com.eklinik.eklinikapi.dto.response.prescription.PresciptionForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.user.UserResponse;
 import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest;
 import com.eklinik.eklinikapi.dto.request.doctor.DoctorRequest;
@@ -139,6 +141,12 @@ public class DoctorServiceImpl implements DoctorService {
         User patientUser = appointment.getPatient();
         PatientProfile patientProfile = patientUser.getPatientProfile();
 
+        MedicalRecordForDoctorResponse medicalRecordResponse = medicalRecordRepository
+                .findByAppointmentId(appointmentId)
+                .map(this::mapToMedicalRecordForDoctorResponse) // Aşağıdaki yardımcı metodu kullanır
+                .orElse(null); // Kayıt yoksa null döner
+
+
         List<PatientHistoryItemResponse> history = appointmentRepository
                 .findByPatientIdAndDoctorIdAndStatusOrderByAppointmentTimeDesc(
                         patientUser.getId(), doctor.getId(), AppointmentStatus.COMPLETED)
@@ -147,6 +155,7 @@ public class DoctorServiceImpl implements DoctorService {
                 .collect(Collectors.toList());
 
         PatientDetailForDoctorResponse patientDetails = PatientDetailForDoctorResponse.builder()
+                .id(patientUser.getId())
                 .firstName(patientUser.getFirstName())
                 .lastName(patientUser.getLastName())
                 .email(patientUser.getEmail())
@@ -165,8 +174,28 @@ public class DoctorServiceImpl implements DoctorService {
                 .appointmentTime(appointment.getAppointmentTime())
                 .status(appointment.getStatus())
                 .patientDetails(patientDetails)
+                .medicalRecord(medicalRecordResponse)
                 .build();
     }
+
+    private MedicalRecordForDoctorResponse mapToMedicalRecordForDoctorResponse(MedicalRecord record) {
+        if (record == null) return null;
+
+        List<PresciptionForDoctorResponse> prescriptions = record.getPrescriptions().stream()
+                .map(p -> PresciptionForDoctorResponse.builder()
+                        .medicationName(p.getMedicationName())
+                        .dosage(p.getDosage())
+                        .duration(p.getDuration())
+                        .build())
+                .collect(Collectors.toList());
+
+        return MedicalRecordForDoctorResponse.builder()
+                .diagnosis(record.getDiagnosis())
+                .notes(record.getNotes())
+                .prescriptions(prescriptions)
+                .build();
+    }
+
 
     @Override
     @Transactional
@@ -248,6 +277,25 @@ public class DoctorServiceImpl implements DoctorService {
         return appointments.stream()
                 .map(this::mapToUpcomingAppointmentResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PatientHistoryItemForDoctorResponse> getPatientHistoryForDoctor(Long patientId) {
+        List<MedicalRecord> medicalRecords = medicalRecordRepository
+                .findAllByAppointmentPatientIdOrderByAppointmentAppointmentTimeDesc(patientId);
+
+        return medicalRecords.stream()
+                .map(this::mapToPatientHistoryItem)
+                .collect(Collectors.toList());
+    }
+
+    private PatientHistoryItemForDoctorResponse mapToPatientHistoryItem(MedicalRecord record) {
+        return PatientHistoryItemForDoctorResponse.builder()
+                .appointmentId(record.getAppointment().getId())
+                .appointmentTime(record.getAppointment().getAppointmentTime())
+                .diagnosis(record.getDiagnosis())
+                .build();
     }
 
     private UpcomingAppointmentForDoctorResponse mapToUpcomingAppointmentResponse(Appointment apt) {

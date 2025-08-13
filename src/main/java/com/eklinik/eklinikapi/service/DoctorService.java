@@ -7,6 +7,7 @@ import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoc
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentDetailForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.DoctorResponse;
+import com.eklinik.eklinikapi.dto.response.doctor.PatientHistoryItemForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordResponse;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -27,4 +28,6 @@ public interface DoctorService {
     DoctorResponse getDoctorByUserId(Long userId);
     List<LocalDate> getAppointmentDatesForMonth(UserDetails currentUser, YearMonth month);
     List<UpcomingAppointmentForDoctorResponse> getUpcomingAppointmentsForDoctor(UserDetails currentUser);
+    List<PatientHistoryItemForDoctorResponse> getPatientHistoryForDoctor(Long patientId);
+
 }

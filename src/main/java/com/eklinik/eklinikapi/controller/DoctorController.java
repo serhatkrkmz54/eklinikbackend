@@ -4,6 +4,7 @@ import com.eklinik.eklinikapi.dto.request.appointment.CompleteAppointmentRequest
 import com.eklinik.eklinikapi.dto.response.appointment.UpcomingAppointmentForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentDetailForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.doctor.AppointmentForDoctorResponse;
+import com.eklinik.eklinikapi.dto.response.doctor.PatientHistoryItemForDoctorResponse;
 import com.eklinik.eklinikapi.dto.response.medicalrecord.MedicalRecordResponse;
 import com.eklinik.eklinikapi.service.DoctorService;
 import jakarta.validation.Valid;
@@ -70,5 +71,11 @@ public class DoctorController {
             @AuthenticationPrincipal UserDetails currentUser) {
 
         return ResponseEntity.ok(doctorService.getUpcomingAppointmentsForDoctor(currentUser));
+    }
+
+    @GetMapping("/patients/{patientId}/history")
+    public ResponseEntity<List<PatientHistoryItemForDoctorResponse>> getPatientHistory(
+            @PathVariable Long patientId) {
+        return ResponseEntity.ok(doctorService.getPatientHistoryForDoctor(patientId));
     }
 }
